@@ -1,0 +1,19 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: >-
+  generate-email-template
+
+Transform:
+- AWS::Serverless-2016-10-31
+
+Resources:
+  EmailTemplateBucket:
+    DeletionPolicy: Retain
+    Type: AWS::S3::Bucket
+
+Outputs:
+  EmailTemplateBucket:
+    Description: S3 Bucket Name
+    Value:
+      Ref: EmailTemplateBucket
+    Export:
+      Name: !Sub ${AWS::StackName}:EmailTemplateBucket
