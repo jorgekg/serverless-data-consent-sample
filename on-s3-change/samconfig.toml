@@ -2,9 +2,10 @@ version = 0.1
 [default]
 [default.deploy]
 [default.deploy.parameters]
-stack_name = "email-template-bucket"
+stack_name = "bucket-email-event"
 s3_bucket = "aws-sam-cli-managed-default-samclisourcebucket-1s14ao5qfzhid"
-s3_prefix = "email-template-bucket"
+s3_prefix = "bucket-email-event"
 region = "us-east-1"
 confirm_changeset = true
-capabilities = "CAPABILITY_NAMED_IAM"
+capabilities = "CAPABILITY_IAM"
+parameter_overrides = "BucketNameEventEmail=\"bucket-email-event\""

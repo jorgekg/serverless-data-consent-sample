@@ -1,0 +1,41 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  send-email
+
+Parameters:
+  BucketNameEventEmail:
+    Type: String
+    Description: "Unique S3 bucket name."
+
+Resources:
+  S3JsonLoggerFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/on-s3-changer.onS3ChangeHandler
+      Runtime: nodejs12.x
+      MemorySize: 128
+      Timeout: 60
+      Policies:
+        - AWSLambdaExecute
+        - S3FullAccessPolicy:
+            BucketName: !Ref BucketNameEventEmail
+      Events:
+        S3NewObjectEvent:
+          Type: S3
+          Properties:
+            Bucket: !Ref AppBucket
+            Events: s3:ObjectCreated:*
+
+  AppBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Ref BucketNameEventEmail
+
+Outputs:
+  EmailTemplateBucket:
+    Description: S3 Bucket Name
+    Value:
+      Ref: AppBucket
+    Export:
+      Name: !Sub ${AWS::StackName}:AppBucket

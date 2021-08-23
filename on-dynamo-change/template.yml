@@ -7,7 +7,7 @@ Transform:
 
 Parameters:
   EmailTemplateBucketStackName:
-    Description: Name of Bucket email template Stack
+    Description: Name of Bucket template Stack
     Type: String
   PersonTableStackName:
     Description: Name of DynamoDB person Stack
@@ -18,7 +18,7 @@ Globals:
     Environment:
       Variables:
         BUCKET_NAME:
-          Fn::ImportValue: !Sub ${EmailTemplateBucketStackName}:EmailTemplateBucket
+          Fn::ImportValue: !Sub ${EmailTemplateBucketStackName}:AppBucket
 
 Resources:
   DynamoStreamEventLogger:
@@ -26,13 +26,13 @@ Resources:
     Properties:
       Description: A Lambda function.
       Runtime: nodejs12.x
-      Handler: src/handlers/dynamo-event-logger.DynamoStreamEventLoggerHandler
+      Handler: src/handlers/on-dynamo-event.onDynamoStreamHandler
       Policies:
         - AmazonDynamoDBFullAccess
         - AWSLambdaDynamoDBExecutionRole
         - S3FullAccessPolicy:
             BucketName:
-              Fn::ImportValue: !Sub ${EmailTemplateBucketStackName}:EmailTemplateBucket
+              Fn::ImportValue: !Sub ${EmailTemplateBucketStackName}:AppBucket
       Events:
         Stream:
           Type: DynamoDB

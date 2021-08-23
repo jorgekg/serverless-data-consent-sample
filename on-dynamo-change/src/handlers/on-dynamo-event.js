@@ -2,11 +2,11 @@ const AWS = require('aws-sdk');
 
 const s3 = new AWS.S3();
 
-exports.DynamoStreamEventLoggerHandler = async (event, context) => {
+exports.onDynamoStreamHandler = async (event, context) => {
     if (event.Records && event.Records.length) {
         for (let i = 0; i < event.Records.length; i++) {
             const e = event.Records[i];
-            if (e.Dynamodb && e.Dynamodb.NewImage && e.Dynamodb.NewImage.email) {
+            if (e.dynamodb && e.dynamodb.NewImage && e.dynamodb.NewImage.email) {
                 try {
                     const params = {
                         Bucket: process.env.BUCKET_NAME,
