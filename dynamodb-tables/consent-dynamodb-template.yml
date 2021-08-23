@@ -1,0 +1,78 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: >-
+  DynamoDB template
+Transform:
+  - AWS::Serverless-2016-10-31
+
+Resources:
+  consentTable:
+    Type: AWS::DynamoDB::Table
+    DeletionPolicy: Retain
+    Properties:
+      StreamSpecification:
+        StreamViewType: NEW_AND_OLD_IMAGES
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+
+  DynamoDBRoleConsent:
+    Type: AWS::IAM::Role
+    DependsOn:
+      - AppSyncDynamoDBConsentPolicy
+    Properties:
+      RoleName: consent-table-appsync-dynamodb-role
+      ManagedPolicyArns:
+        - Ref: AppSyncDynamoDBConsentPolicy
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action:
+              - sts:AssumeRole
+            Principal:
+              Service:
+                - appsync.amazonaws.com
+
+  AppSyncDynamoDBConsentPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      Description: Policy that allows AppSync connect through this DynamoDB template tables.
+      Path: /appsync/
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action:
+              - dynamodb:GetItem
+              - dynamodb:PutItem
+              - dynamodb:DeleteItem
+              - dynamodb:UpdateItem
+              - dynamodb:Query
+              - dynamodb:Scan
+              - dynamodb:BatchGetItem
+              - dynamodb:BatchWriteItem
+            Resource: !Join ["", [!GetAtt consentTable.Arn, "*"]]
+
+Outputs:
+  ConsentDynamoDBTable:
+    Description: DynamoDB Table Consent Name
+    Value:
+      Ref: consentTable
+    Export:
+      Name: !Sub ${AWS::StackName}:consentTable
+
+  ConsentDynamoDBTableStreamArn:
+    Description: DynamoDB Stream ARN
+    Value: !GetAtt [consentTable, StreamArn]
+    Export:
+      Name: !Sub ${AWS::StackName}:consentTableStreamArn
+
+  ConsentDynamoDBTableARN:
+    Description: DynamoDB Stream ARN
+    Value: !GetAtt [DynamoDBRoleConsent, Arn]
+    Export:
+      Name: !Sub ${AWS::StackName}:DynamoDBRoleConsentArn

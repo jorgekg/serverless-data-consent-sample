@@ -1,0 +1,113 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: >-
+  AppSync template
+Transform:
+  - AWS::Serverless-2016-10-31
+
+Parameters:
+  AppSyncStackName:
+    Description: Name of App Sync Stack
+    Type: String
+  PersonTableStackName:
+    Description: Name of DynamoDB person Stack
+    Type: String
+
+Resources:
+  AppSyncApi:
+    Type: AWS::AppSync::GraphQLApi
+    Properties:
+      AuthenticationType: API_KEY
+      Name: !Sub ${AppSyncStackName}
+
+  AppSyncSchema:
+    Type: AWS::AppSync::GraphQLSchema
+    Properties:
+      ApiId: !GetAtt AppSyncApi.ApiId
+
+      Definition: |
+        input InputPerson {
+          id: String!
+          email: String!
+          version: String!
+        }
+        type Person {
+          id: String
+          email: String
+          version: String
+        }
+        type PersonPage {
+          items: [Person]
+          nextToken: String
+        }
+        input TableStringFilterInput {
+          ne: String
+          eq: String
+          le: String
+          lt: String
+          ge: String
+          gt: String
+          contains: String
+          notContains: String
+          between: [String]
+          beginsWith: String
+        }
+        type Mutation {
+          savePerson(input: InputPerson!): Person
+        }
+        type Query {
+          getPerson(id: String!): Person
+        }
+  AppSynPersonTableDataSource:
+    Type: AWS::AppSync::DataSource
+    Properties:
+      ApiId: !GetAtt AppSyncApi.ApiId
+      Name: !Sub ${AppSyncStackName}_person_table
+      Type: AMAZON_DYNAMODB
+      ServiceRoleArn: !ImportValue
+        'Fn::Sub': ${PersonTableStackName}:DynamoDBRolePersonArn
+      DynamoDBConfig:
+        TableName: !ImportValue
+          'Fn::Sub': ${PersonTableStackName}:personTable
+        AwsRegion: !Sub ${AWS::Region}
+
+  AppSyncSavePersonMutationResolver:
+    Type: AWS::AppSync::Resolver
+    DependsOn: AppSyncSchema
+    Properties:
+      ApiId: !GetAtt AppSyncApi.ApiId
+      TypeName: Mutation
+      FieldName: savePerson
+      DataSourceName: !GetAtt AppSynPersonTableDataSource.Name
+      RequestMappingTemplate: |
+        {
+          "version": "2018-05-29",
+          "operation": "PutItem",
+          "key": {
+            "id": $util.dynamodb.toDynamoDBJson($ctx.args.input.id)
+          },
+          "attributeValues": {
+            "id": $util.dynamodb.toDynamoDBJson($ctx.args.input.id),
+            "email": $util.dynamodb.toDynamoDBJson($ctx.args.input.email),
+            "version": $util.dynamodb.toDynamoDBJson($ctx.args.input.version),
+          }
+        }
+      ResponseMappingTemplate: "$util.toJson($ctx.result)"
+
+  AppSyncApiKey:
+    Type: AWS::AppSync::ApiKey
+    Properties:
+      ApiId: !GetAtt AppSyncApi.ApiId
+      ApiKeyId: !GetAtt AppSyncApi.ApiId
+
+Outputs:
+  GraphQLApiEndpoint:
+    Description: The URL to the GraphQL Endpoint
+    Value: !GetAtt AppSyncApi.GraphQLUrl
+  
+  GraphQLApiId:
+    Description: The API ID of the GraphQL API
+    Value: !GetAtt AppSyncApi.ApiId
+
+  GraphQLApiId:
+    Description: The API KEY of the GraphQL API
+    Value: !GetAtt AppSyncApiKey.ApiKey

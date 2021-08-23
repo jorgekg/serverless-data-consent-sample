@@ -1,0 +1,78 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: >-
+  DynamoDB template
+Transform:
+  - AWS::Serverless-2016-10-31
+
+Resources:
+  personTable:
+    Type: AWS::DynamoDB::Table
+    DeletionPolicy: Retain
+    Properties:
+      StreamSpecification:
+        StreamViewType: NEW_AND_OLD_IMAGES
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+
+  DynamoDBRolePerson:
+    Type: AWS::IAM::Role
+    DependsOn:
+      - AppSyncDynamoDBPersonPolicy
+    Properties:
+      RoleName: person-table-appsync-dynamodb-role
+      ManagedPolicyArns:
+        - Ref: AppSyncDynamoDBPersonPolicy
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action:
+              - sts:AssumeRole
+            Principal:
+              Service:
+                - appsync.amazonaws.com
+
+  AppSyncDynamoDBPersonPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      Description: Policy that allows AppSync connect through this DynamoDB template tables.
+      Path: /appsync/
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action:
+              - dynamodb:GetItem
+              - dynamodb:PutItem
+              - dynamodb:DeleteItem
+              - dynamodb:UpdateItem
+              - dynamodb:Query
+              - dynamodb:Scan
+              - dynamodb:BatchGetItem
+              - dynamodb:BatchWriteItem
+            Resource: !Join ["", [!GetAtt personTable.Arn, "*"]]
+
+Outputs:
+  PersonDynamoDBTable:
+    Description: DynamoDB Table Person Name
+    Value:
+      Ref: personTable
+    Export:
+      Name: !Sub ${AWS::StackName}:personTable
+
+  PersonDynamoDBTableStreamArn:
+    Description: DynamoDB Stream ARN
+    Value: !GetAtt [personTable, StreamArn]
+    Export:
+      Name: !Sub ${AWS::StackName}:personTableStreamArn
+
+  PersonDynamoDBTableARN:
+    Description: DynamoDB Stream ARN
+    Value: !GetAtt [DynamoDBRolePerson, Arn]
+    Export:
+      Name: !Sub ${AWS::StackName}:DynamoDBRolePersonArn
