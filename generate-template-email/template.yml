@@ -1,0 +1,50 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: >-
+  generate-email-template
+
+Transform:
+- AWS::Serverless-2016-10-31
+
+Parameters:
+  PersonTableStackName:
+    Description: Name of DynamoDB person Stack
+    Type: String
+    
+
+Resources:
+  emailBucket:
+    DeletionPolicy: Retain
+    Type: AWS::S3::Bucket
+
+  DynamoStreamEventLogger:
+    Type: AWS::Serverless::Function
+    Properties:
+      Description: A Lambda function.
+      Runtime: nodejs12.x
+      Handler: src/handlers/generate-template-email.generateEmailHandler
+      Environment:
+        Variables:
+          BUCKET_NAME: !Ref emailBucket
+      Policies:
+        - AmazonDynamoDBFullAccess
+        - AWSLambdaDynamoDBExecutionRole
+        - S3FullAccessPolicy:
+            BucketName: !Ref emailBucket
+      Events:
+        Stream:
+          Type: DynamoDB
+          Properties:
+            Stream: !ImportValue
+              'Fn::Sub': ${PersonTableStackName}:personTableStreamArn
+            BatchSize: 100
+            StartingPosition: TRIM_HORIZON
+      MemorySize: 128
+      Timeout: 600
+
+Outputs:
+  emailBucketName:
+    Description: S3 Bucket Name
+    Value:
+      Ref: emailBucket
+    Export:
+      Name: !Sub ${AWS::StackName}:emailBucket

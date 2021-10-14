@@ -1,0 +1,12 @@
+{
+    "name": "generate-person-email",
+    "description": "generate-person-email",
+    "version": "1.0.0",
+    "private": true,
+    "dependencies": {},
+    "devDependencies": {
+        "aws-sdk": "^2.815.0",
+        "jest": "^26.6.3",
+        "uuid": "^8.3.2"
+    }
+}
