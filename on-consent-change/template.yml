@@ -1,0 +1,30 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: >-
+  on-consent-change
+
+Transform:
+- AWS::Serverless-2016-10-31
+
+Parameters:
+  consentTableStackName:
+    Description: Name of DynamoDB consent Stack
+    Type: String
+    
+
+Resources:
+  DynamoStreamEventLogger:
+    Type: AWS::Serverless::Function
+    Properties:
+      Description: A Lambda function.
+      Runtime: nodejs12.x
+      Handler: src/handlers/on-consent-change.generateEmailHandler
+      Events:
+        Stream:
+          Type: DynamoDB
+          Properties:
+            Stream: !ImportValue
+              'Fn::Sub': ${consentTableStackName}:consentTableStreamArn
+            BatchSize: 100
+            StartingPosition: TRIM_HORIZON
+      MemorySize: 128
+      Timeout: 600

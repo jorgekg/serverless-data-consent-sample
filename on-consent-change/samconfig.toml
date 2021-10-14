@@ -7,5 +7,5 @@ s3_bucket = "aws-sam-cli-managed-default-samclisourcebucket-1s14ao5qfzhid"
 s3_prefix = "generate-email"
 region = "us-east-1"
 confirm_changeset = true
-capabilities = "CAPABILITY_IAM"
-parameter_overrides = "EmailTemplateBucketStackName=\"bucket-email-event\" PersonTableStackName=\"personTable\""
+capabilities = "CAPABILITY_NAMED_IAM"
+parameter_overrides = "PersonTableStackName=\"person-table\""
